@@ -1,5 +1,5 @@
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import CreateAPIView, ListAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import LimitOffsetPagination
@@ -11,7 +11,7 @@ class ProductPagination(LimitOffsetPagination):
     default_limit = 10
     max_limit = 100
 
-class ProductListView(ListAPIView):
+class ProductList(ListAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     filter_backends = (DjangoFilterBackend, SearchFilter,)
@@ -34,7 +34,7 @@ class ProductListView(ListAPIView):
 
         return super().get_queryset()
 
-class ProductCreateView(CreateAPIView):
+class ProductCreate(CreateAPIView):
     serializer_class = ProductSerializer
 
     def create(self, request, *args, **kwargs):
@@ -47,15 +47,29 @@ class ProductCreateView(CreateAPIView):
 
         return super().create(request, *args, **kwargs)
 
-class ProductDestroyView(DestroyAPIView):
+class ProductRetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     lookup_field = 'id'
+    serializer_class = ProductSerializer
 
     def delete(self, request, *args, **kwargs):
         product_id = request.data.get('id')
         response =  super().delete(request, *args, **kwargs)
         if response.status_code == 204:
             from django.core.cache import cache
-            cache.delete(f'product_{product_id}')
+            cache.delete(f'product_data_{product_id}')
+
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response =  super().update(request, *args, **kwargs)
+        if response.status_code == 204:
+            from django.core.cache import cache
+            product = response.data
+            cache.set(f'product_data_{product["id"]}', {
+                'name': product['name'],
+                'description' : product['description'],
+                'price' : product['price'],
+            })
 
         return response
