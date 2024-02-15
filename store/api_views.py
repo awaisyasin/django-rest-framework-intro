@@ -1,4 +1,5 @@
-from rest_framework.generics import ListAPIView
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import CreateAPIView, ListAPIView, UpdateAPIView, DestroyAPIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import LimitOffsetPagination
@@ -30,4 +31,31 @@ class ProductListView(ListAPIView):
                 sale_start__lte = now,
                 sale_end__gte = now,
             )
+
         return super().get_queryset()
+
+class ProductCreateView(CreateAPIView):
+    serializer_class = ProductSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            price = request.data.get('price')
+            if price is not None and float(price) <= 0.0:
+                raise ValidationError({'price' : 'Must be above $0.00'})
+        except ValueError:
+            raise ValidationError({'price' : 'Required a valid number'})
+
+        return super().create(request, *args, **kwargs)
+
+class ProductDestroyView(DestroyAPIView):
+    queryset = Product.objects.all()
+    lookup_field = 'id'
+
+    def delete(self, request, *args, **kwargs):
+        product_id = request.data.get('id')
+        response =  super().delete(request, *args, **kwargs)
+        if response.status_code == 204:
+            from django.core.cache import cache
+            cache.delete(f'product_{product_id}')
+
+        return response

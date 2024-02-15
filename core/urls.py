@@ -9,6 +9,8 @@ import store.api_views
 urlpatterns = [
     # API URLs
     path('api/v1/products/', store.api_views.ProductListView.as_view()),
+    path('api/v1/products/create/', store.api_views.ProductCreateView.as_view()),
+    path('api/v1/products/<int:id>/delete/', store.api_views.ProductDestroyView.as_view()),
 
     path('admin/', admin.site.urls),
     path('products/<int:id>/', store.views.show, name='show-product'),
