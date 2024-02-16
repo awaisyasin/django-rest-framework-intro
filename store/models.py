@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Product(models.Model):
     DISCOUNT_RATE = 0.10
@@ -59,7 +60,7 @@ class ShoppingCart(models.Model):
 class ShoppingCartItem(models.Model):
     shopping_cart = models.ForeignKey(ShoppingCart, related_name='items', related_query_name='item', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, related_name='+', on_delete=models.CASCADE)
-    quantity = models.IntegerField()
+    quantity = models.IntegerField(validators=[MaxValueValidator(100)])
 
     def total(self):
         return round(self.quantity * self.product.current_price())
