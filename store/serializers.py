@@ -34,24 +34,26 @@ class ProductSerializer(serializers.ModelSerializer):
         style = {'input_type' : 'text', 'placeholder' : '02:39 PM 2 February 2024'},
         help_text = 'Accepted format is "02:39 PM 2 February 2024"',
     )
-    photo = serializers.ImageField()
-    warrenty = serializers.FileField(write_only=True)
+    photo = serializers.ImageField(default=None)
+    warranty = serializers.FileField(write_only=True, default=None)
 
     class Meta:
         model = Product
-        fields = ('id', 'name', 'description', 'price', 'sale_start', 'sale_end', 'is_on_sale', 'current_price', 'cart_items', 'photo', 'warrenty',)
+        fields = ('id', 'name', 'description', 'price', 'sale_start', 'sale_end', 'is_on_sale', 'current_price', 'cart_items', 'photo', 'warranty',)
 
     def get_cart_items(self, instance):
         items = ShoppingCartItem.objects.filter(product=instance)
         return CartItemSerializer(items, many=True).data
 
     def update(self, instance, validated_data):
-        if validated_data.get('warrenty', None):
-            instance.description += '\n\nWarrenty Information:\n'
+        if validated_data.get('warranty', None):
+            instance.description += '\n\nWarranty Information:\n'
             instance.description += b'; '.join(
-                validated_data['warrenty'].readlines()
+                validated_data['warranty'].readlines()
             ).decode()
-        return super().update(instance, validated_data)
+        # return super().update(instance, validated_data)
+            instance.save()
+            return instance
 
 class ProductStatSerializer(serializers.Serializer):
     stats = serializers.DictField(
